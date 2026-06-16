@@ -1,11 +1,19 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from app.models.user import UserRole
+from app.security import require_role
+
 
 router = APIRouter(
     prefix="/client",
     tags=["Client"],
+    dependencies=[
+        Depends(require_role(UserRole.CLIENT)),
+    ],
 )
 
 
 @router.get("/test")
-async def client_test():
-    return {"message": "Client router работает"}
+def client_test():
+    return {
+        "message": "Доступ клиента разрешён",
+    }
