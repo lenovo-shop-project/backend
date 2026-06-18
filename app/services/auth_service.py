@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User, UserRole
 from app.schemas.auth import LoginRequest, RegisterRequest
 from app.security import (
@@ -12,16 +12,16 @@ from app.security import (
 
 
 class AuthService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
 
-    def register(
+    async def register(
         self,
         data: RegisterRequest,
     ) -> User:
         email = data.email.strip().lower()
-        existing_user = self.db.scalar(
+        existing_user = await self.db.scalar(
             select(User).where(User.email == email)
         )
         if existing_user is not None:
@@ -29,7 +29,7 @@ class AuthService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Пользователь с таким email уже существует",
             )
-        first_user_id = self.db.scalar(
+        first_user_id = await self.db.scalar(
             select(User.id).limit(1)
         )
         if first_user_id is None:
@@ -44,10 +44,10 @@ class AuthService:
         )
         self.db.add(user)
         try:
-            self.db.commit()
-            self.db.refresh(user)
+            await self.db.commit()
+            await self.db.refresh(user)
         except IntegrityError as error:
-            self.db.rollback()
+            await self.db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Пользователь с таким email уже существует",
@@ -55,12 +55,12 @@ class AuthService:
         return user
 
 
-    def login(
+    async def login(
         self,
         data: LoginRequest,
     ) -> dict[str, str]:
         email = data.email.strip().lower()
-        user = self.db.scalar(
+        user = await self.db.scalar(
             select(User).where(User.email == email)
         )
         if user is None or not verify_password(

@@ -7,7 +7,8 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
-    Text,
+    Unicode,
+    UnicodeText,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
@@ -24,12 +25,12 @@ class Product(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(
-        String(255),
+        Unicode(255),
         nullable=False,
     )
 
     description: Mapped[str | None] = mapped_column(
-        Text,
+        UnicodeText(),
         nullable=True,
     )
 

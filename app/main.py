@@ -20,7 +20,7 @@ app.add_middleware(
         "PATCH",
         "DELETE",
     ],
-    allow_headers=["Authorization"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router)

@@ -6,7 +6,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     Integer,
-    Text,
+    UnicodeText,
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -52,7 +52,7 @@ class Review(Base):
     )
 
     comment: Mapped[str] = mapped_column(
-        Text,
+        UnicodeText(),
         nullable=False,
     )
 
