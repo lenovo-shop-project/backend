@@ -6,14 +6,13 @@ from sqlalchemy import pool
 from alembic import context
 
 from app import models
-from app import models
-from app.database import Base, DATABASE_URL
+from app.database import Base, SYNC_DATABASE_URL
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
 
-database_url = DATABASE_URL.render_as_string(
+database_url = SYNC_DATABASE_URL.render_as_string(
     hide_password=False,
 ).replace("%", "%%")
 

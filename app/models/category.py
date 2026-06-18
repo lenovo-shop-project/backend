@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from sqlalchemy import String
+from sqlalchemy import Unicode
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -14,7 +14,7 @@ class Category(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
 
     name: Mapped[str] = mapped_column(
-        String(100),
+        Unicode(100),
         unique=True,
         nullable=False,
     )

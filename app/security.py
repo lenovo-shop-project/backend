@@ -1,10 +1,13 @@
 from datetime import UTC, datetime, timedelta
 import jwt
 from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.security import (
+    HTTPAuthorizationCredentials,
+    HTTPBearer,
+)
 from jwt import InvalidTokenError
 from pwdlib import PasswordHash
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.database import get_db
 from app.models.user import User, UserRole
@@ -57,7 +60,7 @@ def create_access_token(user: User) -> str:
 
 
 def decode_access_token(token: str) -> dict:
-    """Проверяет подпись JWT и возвращает payload."""
+    """Проверяет подпись JWT и возвращает данные токена."""
 
     try:
         return jwt.decode(
@@ -69,15 +72,17 @@ def decode_access_token(token: str) -> dict:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Недействительный или просроченный токен",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer",
+            },
         ) from error
 
 
-def get_current_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(
         bearer_scheme
     ),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_db),
 ) -> User:
     """Получает пользователя по Bearer-токену."""
 
@@ -85,10 +90,14 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Требуется авторизация",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer",
+            },
         )
 
-    payload = decode_access_token(credentials.credentials)
+    payload = decode_access_token(
+        credentials.credentials
+    )
 
     user_id = payload.get("sub")
 
@@ -96,25 +105,31 @@ def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="В токене отсутствует идентификатор пользователя",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer",
+            },
         )
 
     try:
         user_id = int(user_id)
-    except ValueError as error:
+    except (TypeError, ValueError) as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Некорректный токен",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer",
+            },
         ) from error
 
-    user = db.get(User, user_id)
+    user = await db.get(User, user_id)
 
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Пользователь не найден",
-            headers={"WWW-Authenticate": "Bearer"},
+            headers={
+                "WWW-Authenticate": "Bearer",
+            },
         )
 
     return user
@@ -123,7 +138,7 @@ def get_current_user(
 def require_role(required_role: UserRole):
     """Разрешает доступ только указанной роли."""
 
-    def check_role(
+    async def check_role(
         current_user: User = Depends(get_current_user),
     ) -> User:
         if current_user.role != required_role:

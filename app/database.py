@@ -1,7 +1,11 @@
-from collections.abc import Generator
-from sqlalchemy import create_engine
+from collections.abc import AsyncGenerator
 from sqlalchemy.engine import URL
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
 
 
@@ -16,19 +20,30 @@ odbc_connection_string = (
     f"{'yes' if settings.db_trust_server_certificate else 'no'};"
 )
 
-DATABASE_URL = URL.create(
+
+ASYNC_DATABASE_URL = URL.create(
+    "mssql+aioodbc",
+    query={
+        "odbc_connect": odbc_connection_string,
+    },
+)
+
+
+SYNC_DATABASE_URL = URL.create(
     "mssql+pyodbc",
     query={
         "odbc_connect": odbc_connection_string,
     },
 )
 
-engine = create_engine(
-    DATABASE_URL,
+
+engine = create_async_engine(
+    ASYNC_DATABASE_URL,
     pool_pre_ping=True,
 )
 
-SessionLocal = sessionmaker(
+
+AsyncSessionLocal = async_sessionmaker(
     bind=engine,
     autoflush=False,
     expire_on_commit=False,
@@ -39,10 +54,6 @@ class Base(DeclarativeBase):
     pass
 
 
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-
-    try:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as db:
         yield db
-    finally:
-        db.close()
