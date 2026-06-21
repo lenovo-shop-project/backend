@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import UserRole
@@ -11,6 +11,8 @@ from app.security import require_role
 from app.services.product_service import ProductService
 from app.schemas.category import CategoryCreate, CategoryResponse
 from app.services.category_service import CategoryService
+from app.schemas.review import ReviewResponse
+from app.services.review_service import ReviewService
 
 
 router = APIRouter(
@@ -60,7 +62,39 @@ async def get_product_by_id(product_id: int, db: AsyncSession = Depends(get_db))
     service = ProductService(db)
     return await service.get_product_by_id_admin(product_id)
 
+
 @router.post("/categories", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
 async def create_category(data: CategoryCreate, db: AsyncSession = Depends(get_db)):
     service = CategoryService(db)
     return await service.create_category(data)
+
+
+@router.get("/categories", response_model=list[CategoryResponse])
+async def get_all_categories(db: AsyncSession = Depends(get_db)):
+    service = CategoryService(db)
+    return await service.get_all_categories()
+
+
+@router.get("/reviews", response_model=list[ReviewResponse])
+async def get_all_reviews(db: AsyncSession = Depends(get_db)):
+    service = ReviewService(db)
+    return await service.get_all_reviews_admin()
+
+
+@router.get("/reviews/{review_id}", response_model=ReviewResponse)
+async def get_review_by_id(review_id: int, db: AsyncSession = Depends(get_db)):
+    service = ReviewService(db)
+    return await service.get_review_by_id_admin(review_id)
+
+
+@router.get("/products/{product_id}/reviews", response_model=list[ReviewResponse])
+async def get_product_reviews_admin(product_id: int, db: AsyncSession = Depends(get_db)):
+    service = ReviewService(db)
+    return await service.get_product_reviews_admin(product_id)
+
+
+@router.delete("/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_review_admin(review_id: int, db: AsyncSession = Depends(get_db)):
+    service = ReviewService(db)
+    await service.delete_review_admin(review_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
