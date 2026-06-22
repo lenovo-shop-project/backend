@@ -9,6 +9,8 @@ from app.schemas.category import CategoryResponse
 from app.services.category_service import CategoryService
 from app.schemas.review import ReviewCreate, ReviewResponse, ReviewUpdate
 from app.services.review_service import ReviewService
+from app.schemas.order import OrderCreate, OrderResponse
+from app.services.order_service import OrderService
 
 
 router = APIRouter(
@@ -69,3 +71,27 @@ async def delete_own_review(review_id: int, db: AsyncSession = Depends(get_db), 
         current_user=current_user,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post("/orders", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
+async def create_order(data: OrderCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = OrderService(db)
+    return await service.create_order(
+        data=data,
+        current_user=current_user,
+    )
+
+
+@router.get("/orders", response_model=list[OrderResponse])
+async def get_my_orders(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = OrderService(db)
+    return await service.get_my_orders(current_user)
+
+
+@router.patch("/orders/{order_id}/cancel", response_model=OrderResponse)
+async def cancel_my_order(order_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = OrderService(db)
+    return await service.cancel_my_order(
+        order_id=order_id,
+        current_user=current_user,
+    )
