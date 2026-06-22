@@ -13,6 +13,10 @@ from app.schemas.category import CategoryCreate, CategoryResponse
 from app.services.category_service import CategoryService
 from app.schemas.review import ReviewResponse
 from app.services.review_service import ReviewService
+from app.schemas.order import OrderResponse, OrderStatusUpdate
+from app.services.order_service import OrderService
+from app.schemas.user import AdminUserResponse
+from app.services.user_service import UserService
 
 
 router = APIRouter(
@@ -98,3 +102,30 @@ async def delete_review_admin(review_id: int, db: AsyncSession = Depends(get_db)
     service = ReviewService(db)
     await service.delete_review_admin(review_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/orders", response_model=list[OrderResponse])
+async def get_all_orders(db: AsyncSession = Depends(get_db)):
+    service = OrderService(db)
+    return await service.get_all_orders_admin()
+
+
+@router.get("/orders/{order_id}", response_model=OrderResponse)
+async def get_order_by_id(order_id: int, db: AsyncSession = Depends(get_db)):
+    service = OrderService(db)
+    return await service.get_order_by_id_admin(order_id)
+
+
+@router.patch("/orders/{order_id}/status", response_model=OrderResponse)
+async def change_order_status(order_id: int, data: OrderStatusUpdate, db: AsyncSession = Depends(get_db)):
+    service = OrderService(db)
+    return await service.change_order_status_admin(
+        order_id=order_id,
+        new_status=data.status,
+    )
+
+
+@router.get("/users", response_model=list[AdminUserResponse])
+async def get_users_without_admins(db: AsyncSession = Depends(get_db)):
+    service = UserService(db)
+    return await service.get_users_without_admins()
