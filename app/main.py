@@ -4,10 +4,7 @@ from app.routers import admin, auth, client
 
 app = FastAPI(title="Lenovo Shop API")
 
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",
-]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
