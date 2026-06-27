@@ -26,10 +26,15 @@ class ReviewUpdate(BaseModel):
     )
 
 
-class ReviewResponse(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True,
+class ReviewAdminResponseUpdate(BaseModel):
+    admin_response: str = Field(
+        min_length=2,
+        max_length=2000,
     )
+
+
+class ReviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     user_id: int
     product_id: int
@@ -37,3 +42,5 @@ class ReviewResponse(BaseModel):
     comment: str
     created_at: datetime
     updated_at: datetime
+    admin_response: str | None
+    admin_response_created_at: datetime | None

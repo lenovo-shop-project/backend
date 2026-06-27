@@ -69,6 +69,16 @@ class Review(Base):
         nullable=False,
     )
 
+    admin_response: Mapped[str | None] = mapped_column(
+        UnicodeText(),
+        nullable=True,
+    )
+
+    admin_response_created_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
     user: Mapped[User] = relationship(
         back_populates="reviews",
     )
