@@ -6,7 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.product import Product
 from app.models.review import Review
 from app.models.user import User
-from app.schemas.review import ReviewCreate, ReviewUpdate
+from app.schemas.review import (
+    ReviewAdminResponseUpdate,
+    ReviewCreate,
+    ReviewUpdate,
+)
 
 
 class ReviewService:
@@ -178,3 +182,17 @@ class ReviewService:
         review = await self._get_review_or_404(review_id)
         await self.db.delete(review)
         await self.db.commit()
+
+    async def add_admin_response(self, review_id: int, data: ReviewAdminResponseUpdate) -> Review:
+        review = await self._get_review_or_404(review_id)
+        admin_response = data.admin_response.strip()
+        if not admin_response:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Відповідь адміністратора не може бути порожньою",
+            )
+        review.admin_response = admin_response
+        review.admin_response_created_at = datetime.now(UTC)
+        await self.db.commit()
+        await self.db.refresh(review)
+        return review

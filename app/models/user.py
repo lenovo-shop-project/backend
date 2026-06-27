@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 import enum
-from sqlalchemy import Enum, String
+from sqlalchemy import Enum, String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -41,6 +41,12 @@ class User(Base):
     image_url: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
+    )
+
+    is_email_verified: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
     )
 
     orders: Mapped[list[Order]] = relationship(

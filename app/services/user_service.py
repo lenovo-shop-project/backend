@@ -18,3 +18,9 @@ class UserService:
             )
         )
         return list(result.all())
+
+    async def update_avatar(self, user: User, image_url: str) -> User:
+        user.image_url = image_url
+        await self.db.commit()
+        await self.db.refresh(user)
+        return user

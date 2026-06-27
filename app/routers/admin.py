@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status, Response, File, UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import UserRole
@@ -11,12 +11,18 @@ from app.security import require_role
 from app.services.product_service import ProductService
 from app.schemas.category import CategoryCreate, CategoryResponse
 from app.services.category_service import CategoryService
-from app.schemas.review import ReviewResponse
+from app.schemas.review import ReviewAdminResponseUpdate, ReviewResponse
 from app.services.review_service import ReviewService
 from app.schemas.order import OrderResponse, OrderStatusUpdate
 from app.services.order_service import OrderService
 from app.schemas.user import AdminUserResponse
 from app.services.user_service import UserService
+from app.schemas.upload import UploadImageResponse
+from app.services.cloudinary_service import upload_image_to_cloudinary
+from app.schemas.catalog_banner import CatalogBannerCreate, CatalogBannerResponse
+from app.services.catalog_banner_service import CatalogBannerService
+from app.schemas.contact import ContactMessageResponse, PhoneRequestResponse
+from app.services.contact_service import ContactService
 
 
 router = APIRouter(
@@ -104,6 +110,15 @@ async def delete_review_admin(review_id: int, db: AsyncSession = Depends(get_db)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.patch("/reviews/{review_id}/response", response_model=ReviewResponse)
+async def add_admin_response_to_review(review_id: int, data: ReviewAdminResponseUpdate, db: AsyncSession = Depends(get_db)):
+    service = ReviewService(db)
+    return await service.add_admin_response(
+        review_id=review_id,
+        data=data,
+    )
+
+
 @router.get("/orders", response_model=list[OrderResponse])
 async def get_all_orders(db: AsyncSession = Depends(get_db)):
     service = OrderService(db)
@@ -129,3 +144,39 @@ async def change_order_status(order_id: int, data: OrderStatusUpdate, db: AsyncS
 async def get_users_without_admins(db: AsyncSession = Depends(get_db)):
     service = UserService(db)
     return await service.get_users_without_admins()
+
+
+@router.post("/uploads/products", response_model=UploadImageResponse)
+async def upload_product_image(file: UploadFile = File(...)):
+    image_url = await upload_image_to_cloudinary(
+        file=file,
+        folder="products",
+    )
+    return {"image_url": image_url}
+
+
+@router.post("/uploads/banners", response_model=UploadImageResponse)
+async def upload_banner_image(file: UploadFile = File(...)):
+    image_url = await upload_image_to_cloudinary(
+        file=file,
+        folder="banners",
+    )
+    return {"image_url": image_url}
+
+
+@router.post("/catalog-banner", response_model=CatalogBannerResponse)
+async def create_catalog_banner(data: CatalogBannerCreate, db: AsyncSession = Depends(get_db)):
+    service = CatalogBannerService(db)
+    return await service.create_catalog_banner(data)
+
+
+@router.get("/contact-messages", response_model=list[ContactMessageResponse])
+async def get_all_contact_messages(db: AsyncSession = Depends(get_db)):
+    service = ContactService(db)
+    return await service.get_all_contact_messages_admin()
+
+
+@router.get("/phone-requests", response_model=list[PhoneRequestResponse])
+async def get_all_phone_requests(db: AsyncSession = Depends(get_db)):
+    service = ContactService(db)
+    return await service.get_all_phone_requests_admin()

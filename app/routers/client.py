@@ -11,7 +11,16 @@ from app.schemas.review import ReviewCreate, ReviewResponse, ReviewUpdate
 from app.services.review_service import ReviewService
 from app.schemas.order import OrderCreate, OrderResponse
 from app.services.order_service import OrderService
-
+from app.schemas.catalog_banner import CatalogBannerResponse
+from app.services.catalog_banner_service import CatalogBannerService
+from app.schemas.contact import (
+    ContactMessageCreate,
+    ContactMessageResponse,
+    PhoneRequestCreate,
+    PhoneRequestResponse,
+)
+from app.services.contact_service import ContactService
+from app.services.favorite_product_service import FavoriteProductService
 
 router = APIRouter(
     prefix="/client",
@@ -95,3 +104,52 @@ async def cancel_my_order(order_id: int, db: AsyncSession = Depends(get_db), cur
         order_id=order_id,
         current_user=current_user,
     )
+
+
+@router.get("/catalog-banner", response_model=CatalogBannerResponse)
+async def get_catalog_banner(db: AsyncSession = Depends(get_db)):
+    service = CatalogBannerService(db)
+    return await service.get_active_catalog_banner()
+
+
+@router.post("/contact-messages", response_model=ContactMessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_contact_message(data: ContactMessageCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = ContactService(db)
+    return await service.create_contact_message(
+        data=data,
+        current_user=current_user,
+    )
+
+
+@router.post("/phone-requests", response_model=PhoneRequestResponse, status_code=status.HTTP_201_CREATED)
+async def create_phone_request(data: PhoneRequestCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = ContactService(db)
+    return await service.create_phone_request(
+        data=data,
+        current_user=current_user,
+    )
+
+
+@router.post("/favorites/{product_id}", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
+async def add_favorite_product(product_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = FavoriteProductService(db)
+    return await service.add_favorite_product(
+        product_id=product_id,
+        current_user=current_user,
+    )
+
+
+@router.delete("/favorites/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_favorite_product(product_id: int, db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = FavoriteProductService(db)
+    await service.remove_favorite_product(
+        product_id=product_id,
+        current_user=current_user,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/favorites", response_model=list[ProductResponse])
+async def get_my_favorite_products(db: AsyncSession = Depends(get_db), current_user: User = Depends(require_role(UserRole.CLIENT))):
+    service = FavoriteProductService(db)
+    return await service.get_my_favorite_products(current_user=current_user)
